@@ -1,6 +1,7 @@
 require 'carrierwave'
 require 'carrierwave/azure_rm/version'
 require 'carrierwave/storage/azure_rm'
+require "azure/storage/common/core/auth/shared_access_signature_generator"
 
 class CarrierWave::Uploader::Base
   add_config :azure_storage_account_name

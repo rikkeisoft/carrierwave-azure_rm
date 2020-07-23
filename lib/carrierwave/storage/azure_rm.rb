@@ -1,4 +1,4 @@
-require 'azure/storage'
+require 'azure/storage/blob'
 
 module CarrierWave
   module Storage
@@ -14,17 +14,16 @@ module CarrierWave
       end
 
       def connection
+        options = %i(storage_account_name storage_access_key).map{|key| [key, uploader.send("azure_#{key}")]}.to_h
         @connection ||= begin
-          %i(storage_account_name storage_access_key storage_blob_host).each do |key|
-            ::Azure::Storage.send("#{key}=", uploader.send("azure_#{key}"))
-          end
-          ::Azure::Storage::Blob::BlobService.new
+          ::Azure::Storage::Blob::BlobService.new options
         end
       end
 
       def signer
         @signer ||= begin
-          ::Azure::Storage::Core::Auth::SharedAccessSignature.new
+          ::Azure::Storage::Common::Core::Auth::SharedAccessSignature.new uploader.send("azure_storage_account_name"),
+                                                                          uploader.send("azure_storage_access_key")
         end
       end
 
@@ -77,7 +76,7 @@ module CarrierWave
           if @uploader.asset_host
             "#{@uploader.asset_host}/#{path}"
           else
-            uri = @connection.generate_uri(path)
+            uri = @connection.generate_uri(URI.encode(path))
             if sign_url?(options)
               @signer.signed_uri(uri, false, { permissions: 'r',
                                                resource: 'b',
