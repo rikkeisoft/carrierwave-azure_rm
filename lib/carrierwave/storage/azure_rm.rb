@@ -45,7 +45,13 @@ module CarrierWave
 
         def access_level
           unless @public_access_level
-            container, signed_identifiers = @connection.get_container_acl(@uploader.send("azure_container"))
+            try = 0
+            begin
+              container, signed_identifiers = @connection.get_container_acl(@uploader.send("azure_container"))
+            rescue StandardError => e
+              try += 1
+              retry if try <= 5
+            end
             @public_access_level = container.public_access_level || 'private' # when container access level is private, it returns nil
           end
           @public_access_level
